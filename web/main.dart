@@ -9,6 +9,7 @@
 
 import 'dart:html';
 import 'dart:math' as Math;
+import 'dart:isolate';
 import 'package:spectre/spectre.dart';
 import 'package:vector_math/vector_math_browser.dart';
 
@@ -17,9 +18,19 @@ import 'package:vector_math/vector_math_browser.dart';
 //---------------------------------------------------------------------
 
 part 'render_state_options.dart';
+part 'shader_defaults.dart';
+part 'tabbed_element.dart';
 part 'texture_dialog.dart';
 part 'application/frame_counter.dart';
 part 'application/game.dart';
+
+/**
+ * The amount of time to wait until attempting to compile the shader.
+ *
+ * This is so the user has time to type, and so the shader isn't
+ * being compiled constantly.
+ */
+const int _compileDelay = 1000;
 
 /// The [FrameCounter] associated with the application
 FrameCounter _counter;
@@ -27,6 +38,10 @@ FrameCounter _counter;
 TextureDialog _textureDialog;
 /// The [RenderStateOptions] associated with the application
 RenderStateOptions _renderStateOptions;
+/// The time to compile the fragment shader.
+int _compileVertexShaderAt;
+/// The time to compile the vertex shader.
+int _compileFragmentShaderAt;
 
 /**
  * Update function for the application.
@@ -133,6 +148,75 @@ void _onBlendStateChanged(String value)
 }
 
 /**
+ * Callback for when the vertex shader text is changed.
+ */
+void _onVertexShaderTextChanged()
+{
+  Date date = new Date.now();
+  if (_compileVertexShaderAt > date.millisecondsSinceEpoch)
+    return;
+
+  String value = '';
+  Game.instance.setVertexSource(value);
+}
+
+/**
+ * Callback for when the fragment shader text is changed.
+ */
+void _onFragmentShaderTextChanged()
+{
+  Date date = new Date.now();
+  if (_compileFragmentShaderAt > date.millisecondsSinceEpoch)
+    return;
+
+  String value = '';
+  Game.instance.setFragmentSource(value);
+}
+
+/**
+ * Initialize the renderer UI.
+ */
+void _initRendererOptions()
+{
+  TabbedElement rendererOptions = new TabbedElement();
+  rendererOptions.addTab('#vertex_tab', '#vertex_shader');
+  rendererOptions.addTab('#fragment_tab', '#fragment_shader');
+  rendererOptions.addTab('#renderer_tab', '#renderer_options');
+
+  TextAreaElement vertexShaderText = document.query('#vertex_shader_source') as TextAreaElement;
+  vertexShaderText.value = _defaultVertexSource;
+
+  vertexShaderText.on.keyUp.add((_) {
+    Date date = new Date.now();
+    _compileVertexShaderAt = date.millisecondsSinceEpoch + _compileDelay;
+
+    Timer timer = new Timer(_compileDelay, (_) {
+      _onVertexShaderTextChanged();
+    });
+  });
+
+  TextAreaElement fragmentShaderText = document.query('#fragment_shader_source') as TextAreaElement;
+  fragmentShaderText.value = _defaultFragmentSource;
+
+  fragmentShaderText.on.keyUp.add((_) {
+    Date date = new Date.now();
+    _compileFragmentShaderAt = date.millisecondsSinceEpoch + _compileDelay;
+
+    Timer timer = new Timer(_compileDelay, (_) {
+      _onFragmentShaderTextChanged();
+    });
+  });
+
+}
+
+void _initCompilerOutput()
+{
+  TabbedElement compilerOutput = new TabbedElement();
+  compilerOutput.addTab('#error_tab', '#error_list');
+  compilerOutput.addTab('#warning_tab', '#warning_list');
+}
+
+/**
  * Main entrypoint for every Dart application.
  */
 void main()
@@ -154,6 +238,10 @@ void main()
   _renderStateOptions.rasterizerCallback = _onRasterizerStateChanged;
   _renderStateOptions.depthStateCallback = _onDepthStateChanged;
   _renderStateOptions.blendStateCallback = _onBlendStateChanged;
+
+  _initRendererOptions();
+
+  _initCompilerOutput();
 
   // Start the animation loop
   window.requestAnimationFrame(_onUpdate);

@@ -1,5 +1,5 @@
 body {
-  background-color:#F8F8F8;
+  background-color:#f8f8f8;
   padding:10px;
   font-family:'Open Sans', sans-serif;
   font-size:14px;
@@ -24,7 +24,7 @@ body {
   position:relative;
   float:left;
   margin-right:25px;
-  margin-top:25px;
+  margin-top:28px;
 }
 
 #layer0 {
@@ -252,11 +252,36 @@ p {
   padding:5px;
   border-width:1px 1px 0px 1px;
   border-style:solid;
+  border-color:#abadb3;
   border-radius:5px 5px 0px 0px;
 }
 
 .selected {
+  background:#ffffff;
+}
 
+textarea {
+  font-family:"Lucida Console", Monaco, monospace;
+  width:534px;
+  height:594px;
+  overflow:scroll;
+  white-space:nowrap;
+  spellcheck:false;
+  font-size:12px;
+}
+
+#ui_contents {
+  height:598px;
+  padding:0px 5px;
+  border:1px solid black;
+  overlow:hidden;
+}
+
+#renderer_options {
+  border:1px solid #abadb3;
+  height:598px;
+  padding:0px 5px;
+  background:#ffffff;
 }
 
 #col1 {
@@ -269,8 +294,43 @@ p {
   float:right;
 }
 
-#renderer_options {
-  height:598px;
-  padding:0px 5px;
-  border:1px solid black;
+/**
+ * Compiler output
+ */
+
+#compilation_area {
+  width:1365px;
+}
+
+#error_list {
+  background:#ffffff;
+  border:1px solid #abadb3;
+  overflow-y:scroll;
+  width:1365px;
+  height:120px;
+}
+
+#warning_list {
+  background:#ffffff;
+  border:1px solid #abadb3;
+  overflow-y:scroll;
+  width:1365px;
+  height:120px;
+}
+
+.compiler_output {
+  width:1348px;
+}
+
+.compiler_output tr:nth-child(even) {
+  background:#f8f8f8;
+}
+
+#compiler_status {
+  width:1353px;
+  border-width:0px 1px 1px 1px;
+  border-style:solid;
+  border-color:#abadb3;
+  background:#e2e2e2;
+  padding:5px;
 }

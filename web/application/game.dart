@@ -25,6 +25,8 @@ class Game
    * Can draw many different debug primitives for a specified time length.
    */
   DebugDrawManager _debugDrawManager;
+  /// Whether debug info should be drawn
+  bool _showDebugInfo;
   bool _debugDrawCameraTransform;
 
   /**
@@ -183,6 +185,7 @@ class Game
 
     // Create the debug draw manager.
     _debugDrawManager = new DebugDrawManager();
+    _showDebugInfo = false;
     _debugDrawCameraTransform = false;
     // Initialize it to use our Spectre graphics device.
     _debugDrawManager.init(_graphicsDevice);
@@ -225,11 +228,16 @@ class Game
   static const _keyCodeS = 83;
   static const _keyCodeT = 84;
   static const _keyCodeW = 87;
+  static const _keyCodeU = 85;
 
   /**
    * Responds to key down events
    */
   void _keyDownHandler(KeyboardEvent event) {
+    if (!_pointerLocked) {
+      return;
+    }
+
     switch (event.keyCode) {
       case _keyCodeA:
         _cameraController.strafeLeft = true;
@@ -265,6 +273,9 @@ class Game
       break;
       case _keyCodeW:
         _cameraController.forward = false;
+      break;
+      case _keyCodeU:
+        _showDebugInfo = !_showDebugInfo;
       break;
     }
   }
@@ -572,11 +583,14 @@ class Game
       }
     }
 
-    _drawDebugGrid();
-    _drawDebugPrims(dt);
+    if (_showDebugInfo)
+    {
+      _drawDebugGrid();
+      _drawDebugPrims(dt);
 
-    // Prepare the debug draw manager to render.
-    _debugDrawManager.prepareForRender();
+      // Prepare the debug draw manager to render.
+      _debugDrawManager.prepareForRender();
+    }
   }
 
   /**
@@ -622,7 +636,10 @@ class Game
     _context.setPrimitiveTopology(GraphicsContext.PrimitiveTopologyTriangles);
     _context.drawIndexed(_meshIndexCount, 0);
 
-    _debugDrawManager.render(_camera);
+    if (_showDebugInfo)
+    {
+      _debugDrawManager.render(_camera);
+    }
   }
 
   //---------------------------------------------------------------------
@@ -700,6 +717,23 @@ class Game
   void setBlendStateProperties(String props)
   {
     _graphicsDevice.configureDeviceChild(_blendState, props);
+  }
+
+  /**
+   * Reconfigure the vertex shader for the rendering.
+   */
+  void setVertexSource(String source)
+  {
+    print('compiling vertex');
+  }
+
+  /**
+   * Reconfigure the fragment shader for the rendering.
+   */
+  void setFragmentSource(String source)
+  {
+    print('compiling fragment');
+
   }
 
   //---------------------------------------------------------------------
