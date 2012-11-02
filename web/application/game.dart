@@ -137,6 +137,14 @@ class Game
    * code.
    */
   int _shaderProgram;
+  /**
+   * A handle to the user supplied shader program.
+   */
+  int _userShaderProgram;
+  /**
+   * A handle to the fallback shader program to use.
+   */
+  int _fallbackShaderProgram;
 
   //---------------------------------------------------------------------
   // State variables
@@ -369,32 +377,37 @@ class Game
    */
   void _createShaders()
   {
-    // Create the shader program object
-    _shaderProgram = _graphicsDevice.createShaderProgram('Texture Program', {});
+    // Create the fallback shader program
+    _fallbackShaderProgram = _graphicsDevice.createShaderProgram('Fallback Program', {});
 
-    // Create the vertex shader
-    _vertexShader = _graphicsDevice.createVertexShader('Texture Vertex Shader', {});
+    int fallbackVertexShader = _graphicsDevice.createVertexShader('Fallback Vertex Shader', {});
+    _context.compileShader(fallbackVertexShader, _fallbackVertexShader);
 
-    int vertexShaderResource = _resourceManager.registerResource('/shaders/simple_texture.vs');
+    int fallbackFragmentShader = _graphicsDevice.createFragmentShader('Fallback Fragment Shader', {});
+    _context.compileShader(fallbackFragmentShader, _fallbackFragmentShader);
 
-    _resourceManager.addEventCallback(vertexShaderResource, ResourceEvents.TypeUpdate, (type, resource) {
-      _context.compileShaderFromResource(_vertexShader, vertexShaderResource, _resourceManager);
-      _graphicsDevice.configureDeviceChild(_shaderProgram, { 'VertexProgram': _vertexShader });
-    });
+    Map fallbackShaderProps = {
+      'VertexProgram': fallbackVertexShader,
+      'FragmentProgram': fallbackFragmentShader
+    } ;
 
-    _resourceManager.loadResource(vertexShaderResource);
+    _graphicsDevice.configureDeviceChild(_fallbackShaderProgram, fallbackShaderProps);
 
-    // Create the fragment shader
-    _fragmentShader = _graphicsDevice.createFragmentShader('Texture Fragment Shader', {});
+    // Create the user defined shader program
+    _userShaderProgram = _graphicsDevice.createShaderProgram('User Program', {});
 
-    int fragmentShaderResource = _resourceManager.registerResource('/shaders/simple_texture.fs');
+    _vertexShader = _graphicsDevice.createVertexShader('User Vertex Shader', {});
+    _fragmentShader = _graphicsDevice.createFragmentShader('User Fragment Shader', {});
 
-    _resourceManager.addEventCallback(fragmentShaderResource, ResourceEvents.TypeUpdate, (type, resource) {
-      _context.compileShaderFromResource(_fragmentShader, fragmentShaderResource, _resourceManager);
-      _graphicsDevice.configureDeviceChild(_shaderProgram, { 'FragmentProgram': _fragmentShader });
-    });
+    Map userShaderProps = {
+      'VertexProgram': _vertexShader,
+      'FragmentProgram': _fragmentShader
+    } ;
 
-    _resourceManager.loadResource(fragmentShaderResource);
+    _graphicsDevice.configureDeviceChild(_userShaderProgram, userShaderProps);
+
+    // By default use the fallback
+    _shaderProgram = _fallbackShaderProgram;
   }
 
   /**
@@ -720,11 +733,56 @@ class Game
   }
 
   /**
+   * Check if the user defined program is valid.
+   */
+  bool get isProgramValid
+  {
+    // Query if the shaders are valid
+    // Check for compilation errors
+    VertexShader vertexShader = _graphicsDevice.getDeviceChild(_vertexShader);
+    if (!vertexShader.compiled)
+      return false;
+
+    FragmentShader fragmentShader = _graphicsDevice.getDeviceChild(_fragmentShader);
+    if (!fragmentShader.compiled)
+      return false;
+
+    // Query if the program is valid
+    // Check for linker errors
+    ShaderProgram shaderProgram = _graphicsDevice.getDeviceChild(_userShaderProgram);
+
+    return shaderProgram.linked;
+  }
+
+  /**
+   * Gets the vertex shader's compilation.
+   */
+  String get vertexShaderLog
+  {
+    VertexShader vertexShader = _graphicsDevice.getDeviceChild(_vertexShader);
+    return vertexShader.log;
+  }
+
+  /**
+   * Gets the fragment shader's compilation log.
+   */
+  String get fragmentShaderLog
+  {
+    FragmentShader fragmentShader = _graphicsDevice.getDeviceChild(_fragmentShader);
+    return fragmentShader.log;
+  }
+
+  /**
    * Reconfigure the vertex shader for the rendering.
    */
   void setVertexSource(String source)
   {
-    print('compiling vertex');
+    _context.compileShader(_vertexShader, source);
+
+    ShaderProgram program = _graphicsDevice.getDeviceChild(_userShaderProgram);
+    program.link();
+
+    _shaderProgram = (isProgramValid) ? _userShaderProgram : _fallbackShaderProgram;
   }
 
   /**
@@ -732,8 +790,12 @@ class Game
    */
   void setFragmentSource(String source)
   {
-    print('compiling fragment');
+    _context.compileShader(_fragmentShader, source);
 
+    ShaderProgram program = _graphicsDevice.getDeviceChild(_userShaderProgram);
+    program.link();
+
+    _shaderProgram = (isProgramValid) ? _userShaderProgram : _fallbackShaderProgram;
   }
 
   //---------------------------------------------------------------------

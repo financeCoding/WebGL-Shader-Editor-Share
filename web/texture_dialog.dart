@@ -26,6 +26,10 @@ class TextureDialog
   static const String _overClass = 'over_area';
   static const String _hiddenClass = 'hidden';
 
+  //---------------------------------------------------------------------
+  // Member variables
+  //---------------------------------------------------------------------
+
   /// UI tab allowing dragged images
   static const int _dragInput = 0;
   /// UI tab allowing url input
@@ -47,6 +51,10 @@ class TextureDialog
   SubmitEvent submitCallback;
   /// Filesystem for the application.
   DOMFileSystem _fileSystem;
+
+  //---------------------------------------------------------------------
+  // Construction
+  //---------------------------------------------------------------------
 
   /**
    * Initializes an instance of the [TextureDialog] class.

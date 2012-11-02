@@ -17,6 +17,7 @@ import 'package:vector_math/vector_math_browser.dart';
 // Source files
 //---------------------------------------------------------------------
 
+part 'compile_log.dart';
 part 'render_state_options.dart';
 part 'shader_defaults.dart';
 part 'tabbed_element.dart';
@@ -42,6 +43,8 @@ RenderStateOptions _renderStateOptions;
 int _compileVertexShaderAt;
 /// The time to compile the vertex shader.
 int _compileFragmentShaderAt;
+/// The [CompileLog] for the shader program.
+CompileLog _compileLog;
 
 /**
  * Update function for the application.
@@ -150,27 +153,27 @@ void _onBlendStateChanged(String value)
 /**
  * Callback for when the vertex shader text is changed.
  */
-void _onVertexShaderTextChanged()
+void _onVertexShaderTextChanged(String value)
 {
   Date date = new Date.now();
   if (_compileVertexShaderAt > date.millisecondsSinceEpoch)
     return;
 
-  String value = '';
   Game.instance.setVertexSource(value);
+  _updateCompilerLog();
 }
 
 /**
  * Callback for when the fragment shader text is changed.
  */
-void _onFragmentShaderTextChanged()
+void _onFragmentShaderTextChanged(String value)
 {
   Date date = new Date.now();
   if (_compileFragmentShaderAt > date.millisecondsSinceEpoch)
     return;
 
-  String value = '';
   Game.instance.setFragmentSource(value);
+  _updateCompilerLog();
 }
 
 /**
@@ -191,9 +194,11 @@ void _initRendererOptions()
     _compileVertexShaderAt = date.millisecondsSinceEpoch + _compileDelay;
 
     Timer timer = new Timer(_compileDelay, (_) {
-      _onVertexShaderTextChanged();
+      _onVertexShaderTextChanged(vertexShaderText.value);
     });
   });
+
+  Game.instance.setVertexSource(vertexShaderText.value);
 
   TextAreaElement fragmentShaderText = document.query('#fragment_shader_source') as TextAreaElement;
   fragmentShaderText.value = _defaultFragmentSource;
@@ -203,17 +208,38 @@ void _initRendererOptions()
     _compileFragmentShaderAt = date.millisecondsSinceEpoch + _compileDelay;
 
     Timer timer = new Timer(_compileDelay, (_) {
-      _onFragmentShaderTextChanged();
+      _onFragmentShaderTextChanged(fragmentShaderText.value);
     });
   });
 
+  Game.instance.setFragmentSource(fragmentShaderText.value);
 }
 
-void _initCompilerOutput()
+/**
+ * Initializes the compiler output.
+ */
+void _initCompilerLog()
 {
   TabbedElement compilerOutput = new TabbedElement();
   compilerOutput.addTab('#error_tab', '#error_list');
   compilerOutput.addTab('#warning_tab', '#warning_list');
+
+  _compileLog = new CompileLog();
+}
+
+/**
+ * Updates the compiler output.
+ */
+void _updateCompilerLog()
+{
+  Game instance = Game.instance;
+  _compileLog.clear();
+
+  if (!instance.isProgramValid)
+  {
+    _compileLog.addToLog('Vertex', instance.vertexShaderLog);
+    _compileLog.addToLog('Fragment', instance.fragmentShaderLog);
+  }
 }
 
 /**
@@ -241,7 +267,7 @@ void main()
 
   _initRendererOptions();
 
-  _initCompilerOutput();
+  _initCompilerLog();
 
   // Start the animation loop
   window.requestAnimationFrame(_onUpdate);
