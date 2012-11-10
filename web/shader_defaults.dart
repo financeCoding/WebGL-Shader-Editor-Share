@@ -1,3 +1,4 @@
+part of webgl_lab;
 
 /// Default value for the vertex shader source.
 String _defaultVertexSource =

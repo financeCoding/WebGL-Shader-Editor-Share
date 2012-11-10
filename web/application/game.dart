@@ -1,3 +1,4 @@
+part of webgl_lab;
 
 class Game
 {
@@ -188,9 +189,7 @@ class Game
     // Setup the resource manager
     _resourceManager = new ResourceManager();
 
-    String baseUrl = "${window.location.href.substring(0, window.location.href.length - "engine.html".length)}web/resources";
-    _resourceManager.setBaseURL(baseUrl);
-
+ 
     // Create the debug draw manager.
     _debugDrawManager = new DebugDrawManager();
     _showDebugInfo = false;
@@ -660,7 +659,7 @@ class Game
   //---------------------------------------------------------------------
 
   /// Retrieves the instance of [Game].
-  static get instance => _gameInstance;
+  static Game get instance => _gameInstance;
 
   /**
    * Sets the mesh to display.
@@ -810,8 +809,8 @@ class Game
     _gameInstance = new Game('#webgl_host');
 
     // Set the mesh and associated texture
-    _gameInstance.texture = '/textures/dart_tex_alpha.png';
-    _gameInstance.mesh = '/meshes/cube.mesh';
+    _gameInstance.texture = 'web/resources/textures/dart_tex_alpha.png';
+    _gameInstance.mesh = 'web/resources/meshes/cube.mesh';
   }
 
   /**

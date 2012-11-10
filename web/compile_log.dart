@@ -1,3 +1,4 @@
+part of webgl_lab;
 
 /**
  * Contains a log of any compilation issues.
