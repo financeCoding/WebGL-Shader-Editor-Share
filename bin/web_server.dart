@@ -78,18 +78,28 @@ void main() {
                 print(code.id);
                 print(code.id.toJson());
                 print(code.id.toHexString());
-                conn.send(JSON.stringify(
-                    {
-                      "command" : "set_code_id",
+                conn.send(JSON.stringify({
+                      "command" : "load_id",
                       "code_id" : code.id.toHexString()
                     }));
               } else if (jsonMessageFromClient["command"] == "load") {
                 // load the code from the database.
-                objectory.find($Code.id('')).then((found) {
-                  // Send the results to client
-                  print("Sending Code back to the client");
-                  
+                print($Code.id(jsonMessageFromClient["id"]));
+                print("${jsonMessageFromClient["id"]}");
+                
+                // Find the object
+                ObjectId oid = new ObjectId.fromHexString(jsonMessageFromClient["id"]);
+                objectory.findOne($Code.id(oid)).then((found) {
+                  print("found = \n${found}");
+                  var c = found as Code;
+                  Map m = new Map();
+                  m['command'] = 'load_shaders';
+                  m['fragmentShaderSource'] = c.fragmentShaderSource;
+                  m['vertexShaderSource'] = c.vertexShaderSource;
+                  m['configRenderer'] = '';
+                  conn.send(JSON.stringify(m));
                 });
+                
               }
             }
           };

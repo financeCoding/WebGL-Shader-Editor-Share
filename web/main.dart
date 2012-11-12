@@ -270,10 +270,36 @@ void _updateCompilerLog()
   }
 }
 
+Map<String, String> get queryString {
+  var results = {};
+  var qs;
+  qs = window.location.search.isEmpty ? '' 
+      : window.location.search.substring(1);
+  var pairs = qs.split('&');
+
+  for(final pair in pairs){
+    var kv = pair.split('=');
+    if (kv.length != 2) continue;
+    results[kv[0]] = kv[1];
+  }
+
+  return results;
+}
+
 void setupWebsocket() {
   ws = new WebSocket("ws://${window.location.host}/ws");
   ws.on.open.add((a) {
     print("open $a");
+    // TODO(adam): check if we have a callback uri. 
+    //var baseUrl = window.location.toString().split('?')[0];
+    print("queryString = ${queryString}");
+    if (queryString.containsKey('q')) {
+      ws.send(JSON.stringify({
+        "command" : "load",
+        "id" : queryString['q']
+      }));
+    }
+
   });
 
   ws.on.error.add((e) {
@@ -290,6 +316,19 @@ void setupWebsocket() {
     if (jsonFromServer.containsKey("command")) {
       if (jsonFromServer["command"] == "load_shaders") {
         // Loading shader code from server. 
+        print("loading shader = \n${jsonFromServer}");
+        var vertex_shader_source = document.query('#vertex_shader_source') as TextAreaElement;
+        var fragment_shader_source = document.query('#fragment_shader_source') as TextAreaElement;
+        vertex_shader_source.value = jsonFromServer["vertexShaderSource"];
+        fragment_shader_source.value = jsonFromServer["fragmentShaderSource"];
+        // TODO(adam): setup configRenderer
+      } else if (jsonFromServer["command"] == "load_id") {
+        print("load_id = \n$jsonFromServer");
+        var link_back_share = document.query('#link_back_share') as AnchorElement;
+        var baseUrl = window.location.toString().split('?')[0];
+        var oid = jsonFromServer["code_id"];
+        link_back_share.href = "${baseUrl}?q=${oid}";
+        link_back_share.innerHTML = "${oid}";
       }
     }
     
@@ -300,7 +339,12 @@ void setupWebsocket() {
 }
 
 loadData() {
-  ws.send(JSON.stringify({"command" : "load"}));
+  // Check the uri for loaded data. 
+//  ws.send(JSON.stringify({
+//    "command" : "load",
+//    "id" : "50a0c98cf81b24759f000000"
+//      }));
+  
 }
 
 /**
@@ -309,7 +353,7 @@ loadData() {
 void main()
 {
   setupWebsocket();
-  //loadData();
+  loadData();
   
   // Initialize the WebGL side
   Game.onInitialize();
