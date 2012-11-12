@@ -11,6 +11,7 @@ library webgl_lab;
 
 import 'dart:html';
 import 'dart:math' as Math;
+import 'dart:json';
 import 'dart:isolate';
 import 'package:spectre/spectre.dart';
 import 'package:vector_math/vector_math_browser.dart';
@@ -47,6 +48,9 @@ int _compileVertexShaderAt;
 int _compileFragmentShaderAt;
 /// The [CompileLog] for the shader program.
 CompileLog _compileLog;
+
+WebSocket ws;
+Function onMessage;
 
 /**
  * Update function for the application.
@@ -96,32 +100,54 @@ void _onModelChange(String value)
  */
 void _initModelButtons()
 {
+  
+  DivElement shareButton = document.query('#share_button') as DivElement;
+  assert(shareButton != null);
+  shareButton.on.click.add((_) {
+    // Send via websockets the json data of 
+    // vertext, fragment and renderer.
+    // #vertex_shader_source
+    // #fragment_shader_source
+    // TODO(adam): pick all the settings for renderer off.
+    
+    var vertex_shader_source = document.query('#vertex_shader_source') as TextAreaElement;
+    var fragment_shader_source = document.query('#fragment_shader_source') as TextAreaElement;
+    
+    var d = {
+      "command" : "store",
+      "vertex_shader_source" : vertex_shader_source.value,
+      "fragment_shader_source" : fragment_shader_source.value
+    };
+    ws.send(JSON.stringify(d));
+    
+  });
+  
   DivElement cubeMesh = document.query('#cube_button') as DivElement;
   assert(cubeMesh != null);
 
   cubeMesh.on.click.add((_) {
-    _onModelChange('web/resources/meshes/cube.mesh');
+    _onModelChange('resources/meshes/cube.mesh');
   });
 
   DivElement sphereMesh = document.query('#sphere_button') as DivElement;
   assert(sphereMesh != null);
 
   sphereMesh.on.click.add((_) {
-    _onModelChange('web/resources/meshes/sphere.mesh');
+    _onModelChange('resources/meshes/sphere.mesh');
   });
 
   DivElement planeMesh = document.query('#plane_button') as DivElement;
   assert(planeMesh != null);
 
   planeMesh.on.click.add((_) {
-    _onModelChange('web/resources/meshes/plane.mesh');
+    _onModelChange('resources/meshes/plane.mesh');
   });
 
   DivElement cylinderMesh = document.query('#cylinder_button') as DivElement;
   assert(cylinderMesh != null);
 
   cylinderMesh.on.click.add((_) {
-    _onModelChange('web/resources/meshes/cylinder.mesh');
+    _onModelChange('resources/meshes/cylinder.mesh');
   });
 }
 
@@ -244,11 +270,47 @@ void _updateCompilerLog()
   }
 }
 
+void setupWebsocket() {
+  ws = new WebSocket("ws://${window.location.host}/ws");
+  ws.on.open.add((a) {
+    print("open $a");
+  });
+
+  ws.on.error.add((e) {
+    print("error $e");
+  });
+  ws.on.close.add((c) {
+    print("close $c");
+  });
+
+  ws.on.message.add((message) {
+    print("ws.on.message = $message");
+    Map jsonFromServer = JSON.parse(message.data);
+    print(jsonFromServer);
+    if (jsonFromServer.containsKey("command")) {
+      if (jsonFromServer["command"] == "load_shaders") {
+        // Loading shader code from server. 
+      }
+    }
+    
+//    if (onMessage is Function) {
+//      onMessage(jsonFiles);
+//    }
+  });
+}
+
+loadData() {
+  ws.send(JSON.stringify({"command" : "load"}));
+}
+
 /**
  * Main entrypoint for every Dart application.
  */
 void main()
 {
+  setupWebsocket();
+  //loadData();
+  
   // Initialize the WebGL side
   Game.onInitialize();
   _counter = new FrameCounter('#frame_counter');

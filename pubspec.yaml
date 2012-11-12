@@ -4,3 +4,7 @@ version: 1.0.0
 dependencies:
   spectre:
     git: https://github.com/johnmccutchan/spectre.git
+  crimsonhttp:
+    git: https://github.com/chrisbu/CrimsonHttp.git
+  objectory:
+    git: https://github.com/vadimtsushko/objectory.git
