@@ -43,9 +43,9 @@ TextureDialog _textureDialog;
 /// The [RenderStateOptions] associated with the application
 RenderStateOptions _renderStateOptions;
 /// The time to compile the fragment shader.
-int _compileVertexShaderAt;
+int _compileVertexShaderAt = 0;
 /// The time to compile the vertex shader.
-int _compileFragmentShaderAt;
+int _compileFragmentShaderAt = 0;
 /// The [CompileLog] for the shader program.
 CompileLog _compileLog;
 
@@ -331,6 +331,8 @@ void setupWebsocket() {
         var fragment_shader_source = document.query('#fragment_shader_source') as TextAreaElement;
         vertex_shader_source.value = jsonFromServer["vertexShaderSource"];
         fragment_shader_source.value = jsonFromServer["fragmentShaderSource"];
+        _onFragmentShaderTextChanged(fragment_shader_source.value);
+        _onVertexShaderTextChanged(vertex_shader_source.value);
         // TODO(adam): setup configRenderer
       } else if (jsonFromServer["command"] == "load_id") {
         var link_back_share = document.query('#link_back_share') as AnchorElement;
@@ -348,11 +350,12 @@ void setupWebsocket() {
  */
 void main()
 {
+  // Initialize the WebGL side
+  Game.onInitialize();
+  
   // open up web socket connection
   setupWebsocket();
   
-  // Initialize the WebGL side
-  Game.onInitialize();
   _counter = new FrameCounter('#frame_counter');
 
   // Initialize the UI side
