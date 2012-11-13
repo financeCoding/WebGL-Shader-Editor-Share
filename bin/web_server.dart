@@ -11,7 +11,7 @@ import 'package:objectory/objectory_console.dart';
 import 'domain_model.dart';
 
 const Uri = 'mongodb://127.0.0.1/objectory_shader_app';
-final IP = '127.0.0.1';
+final IP = '0.0.0.0';
 final PORT = 8080;
 
 void main() {
@@ -63,34 +63,24 @@ void main() {
       objectory.initDomainModel().then((_) {
         wsHandler.onOpen = (WebSocketConnection conn) {
           conn.onMessage = (message) {
-            print("wsHandler.onMessage = $message");
             Map jsonMessageFromClient = JSON.parse(message);
             if (jsonMessageFromClient.containsKey("command")) {
               if (jsonMessageFromClient["command"] == "store") {
                 // Store to database
-                print("storing to database");
                 Code code = new Code();
                 code.fragmentShaderSource = jsonMessageFromClient["fragment_shader_source"];
                 code.vertexShaderSource = jsonMessageFromClient["vertex_shader_source"];
                 code.rendererConfig = ""; // TODO(adam): renderer configuration
                 code.save();
-                // TODO(adam): send the object id back.
-                print(code.id);
-                print(code.id.toJson());
-                print(code.id.toHexString());
                 conn.send(JSON.stringify({
                       "command" : "load_id",
                       "code_id" : code.id.toHexString()
                     }));
               } else if (jsonMessageFromClient["command"] == "load") {
                 // load the code from the database.
-                print($Code.id(jsonMessageFromClient["id"]));
-                print("${jsonMessageFromClient["id"]}");
-                
                 // Find the object
                 ObjectId oid = new ObjectId.fromHexString(jsonMessageFromClient["id"]);
                 objectory.findOne($Code.id(oid)).then((found) {
-                  print("found = \n${found}");
                   var c = found as Code;
                   Map m = new Map();
                   m['command'] = 'load_shaders';
@@ -105,7 +95,7 @@ void main() {
           };
        
           conn.onClosed =  (int status, String reason) {
-            print("conn.onClosed status=${status},reason=${reason}");
+            print("conn.onClosed status=${status}, reason=${reason}");
           };
         };
       });
@@ -118,7 +108,7 @@ void main() {
   };
     
   server.onError = (e) {
-    print("error $e");
+    print("server error $e");
   };
   
 }

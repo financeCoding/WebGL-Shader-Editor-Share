@@ -50,7 +50,6 @@ int _compileFragmentShaderAt;
 CompileLog _compileLog;
 
 WebSocket ws;
-Function onMessage;
 
 /**
  * Update function for the application.
@@ -106,8 +105,6 @@ void _initModelButtons()
   shareButton.on.click.add((_) {
     // Send via websockets the json data of 
     // vertext, fragment and renderer.
-    // #vertex_shader_source
-    // #fragment_shader_source
     // TODO(adam): pick all the settings for renderer off.
     
     var vertex_shader_source = document.query('#vertex_shader_source') as TextAreaElement;
@@ -179,6 +176,25 @@ void _onBlendStateChanged(String value)
 }
 
 /**
+ * Quickfix for removing non-ascii chars
+ */
+_toAscii(String value) {
+  StringBuffer sb = new StringBuffer();
+  for (int i=0; i<value.length; i++) {
+    int c = value.charCodeAt(i);
+    if (c == 160) { 
+      sb.add(" ");
+    } else if (c >= 0 && c < 128) {
+      sb.addCharCode(c);
+    } else if (c >= 128) {
+      print("warning at index $i of is >= 128: '$c' '${new String.fromCharCodes([c])}'");
+    }
+  }
+  
+  return sb.toString();
+}
+
+/**
  * Callback for when the vertex shader text is changed.
  */
 void _onVertexShaderTextChanged(String value)
@@ -187,7 +203,7 @@ void _onVertexShaderTextChanged(String value)
   if (_compileVertexShaderAt > date.millisecondsSinceEpoch)
     return;
 
-  Game.instance.setVertexSource(value);
+  Game.instance.setVertexSource(_toAscii(value));
   _updateCompilerLog();
 }
 
@@ -195,12 +211,12 @@ void _onVertexShaderTextChanged(String value)
  * Callback for when the fragment shader text is changed.
  */
 void _onFragmentShaderTextChanged(String value)
-{
+{  
   Date date = new Date.now();
   if (_compileFragmentShaderAt > date.millisecondsSinceEpoch)
     return;
 
-  Game.instance.setFragmentSource(value);
+  Game.instance.setFragmentSource(_toAscii(value));
   _updateCompilerLog();
 }
 
@@ -289,10 +305,7 @@ Map<String, String> get queryString {
 void setupWebsocket() {
   ws = new WebSocket("ws://${window.location.host}/ws");
   ws.on.open.add((a) {
-    print("open $a");
-    // TODO(adam): check if we have a callback uri. 
-    //var baseUrl = window.location.toString().split('?')[0];
-    print("queryString = ${queryString}");
+    print("websocket opened $a");
     if (queryString.containsKey('q')) {
       ws.send(JSON.stringify({
         "command" : "load",
@@ -303,27 +316,23 @@ void setupWebsocket() {
   });
 
   ws.on.error.add((e) {
-    print("error $e");
+    print("websocket error $e");
   });
   ws.on.close.add((c) {
-    print("close $c");
+    print("websocket close $c");
   });
 
   ws.on.message.add((message) {
-    print("ws.on.message = $message");
     Map jsonFromServer = JSON.parse(message.data);
-    print(jsonFromServer);
     if (jsonFromServer.containsKey("command")) {
       if (jsonFromServer["command"] == "load_shaders") {
         // Loading shader code from server. 
-        print("loading shader = \n${jsonFromServer}");
         var vertex_shader_source = document.query('#vertex_shader_source') as TextAreaElement;
         var fragment_shader_source = document.query('#fragment_shader_source') as TextAreaElement;
         vertex_shader_source.value = jsonFromServer["vertexShaderSource"];
         fragment_shader_source.value = jsonFromServer["fragmentShaderSource"];
         // TODO(adam): setup configRenderer
       } else if (jsonFromServer["command"] == "load_id") {
-        print("load_id = \n$jsonFromServer");
         var link_back_share = document.query('#link_back_share') as AnchorElement;
         var baseUrl = window.location.toString().split('?')[0];
         var oid = jsonFromServer["code_id"];
@@ -331,20 +340,7 @@ void setupWebsocket() {
         link_back_share.innerHTML = "${oid}";
       }
     }
-    
-//    if (onMessage is Function) {
-//      onMessage(jsonFiles);
-//    }
   });
-}
-
-loadData() {
-  // Check the uri for loaded data. 
-//  ws.send(JSON.stringify({
-//    "command" : "load",
-//    "id" : "50a0c98cf81b24759f000000"
-//      }));
-  
 }
 
 /**
@@ -352,8 +348,8 @@ loadData() {
  */
 void main()
 {
+  // open up web socket connection
   setupWebsocket();
-  loadData();
   
   // Initialize the WebGL side
   Game.onInitialize();
