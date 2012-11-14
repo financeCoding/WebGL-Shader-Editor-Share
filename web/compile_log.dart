@@ -9,8 +9,8 @@ class CompileLog
   // Class variables
   //---------------------------------------------------------------------
 
-  static const RegExp _errorExp = const RegExp(r"ERROR:\s+(\d+):(\d+):\s+('.*)");
-  static const RegExp _warningExp = const RegExp(r"ERROR:\s+(\d+):(\d+):\s+('.*)");
+  final RegExp _errorExp = new RegExp(r"ERROR:\s+(\d+):(\d+):\s+('.*)");
+  final RegExp _warningExp = new RegExp(r"ERROR:\s+(\d+):(\d+):\s+('.*)");
 
   //---------------------------------------------------------------------
   // Member variables
